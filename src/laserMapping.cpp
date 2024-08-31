@@ -59,6 +59,8 @@
 #include <livox_ros_driver/CustomMsg.h>
 #include "preprocess.h"
 #include <ikd-Tree/ikd_Tree.h>
+#include <rosbag/bag.h>
+
 
 #define INIT_TIME           (0.1)
 #define LASER_POINT_COV     (0.001)
@@ -136,7 +138,7 @@ nav_msgs::Path path;
 nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose;
-
+rosbag::Bag bag_out;
 shared_ptr<Preprocess> p_pre(new Preprocess());
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
@@ -592,6 +594,7 @@ void publish_odometry(const ros::Publisher & pubOdomAftMapped)
     odomAftMapped.child_frame_id = "body";
     odomAftMapped.header.stamp = ros::Time().fromSec(lidar_end_time);// ros::Time().fromSec(lidar_end_time);
     set_posestamp(odomAftMapped.pose);
+    bag_out.write("/fastlio_odometry",odomAftMapped.header.stamp,odomAftMapped);
     pubOdomAftMapped.publish(odomAftMapped);
     auto P = kf.get_P();
     for (int i = 0; i < 6; i ++)
@@ -803,6 +806,8 @@ int main(int argc, char** argv)
     double deltaT, deltaR, aver_time_consu = 0, aver_time_icp = 0, aver_time_match = 0, aver_time_incre = 0, aver_time_solve = 0, aver_time_const_H_time = 0;
     bool flg_EKF_converged, EKF_stop_flg = 0;
     
+    std::string out_bag_name = "/tmp/odometry_fastlio_bag.bag";
+    bag_out.open(out_bag_name, rosbag::bagmode::Write);
     FOV_DEG = (fov_deg + 10.0) > 179.9 ? 179.9 : (fov_deg + 10.0);
     HALF_FOV_COS = cos((FOV_DEG) * 0.5 * PI_M / 180.0);
 
